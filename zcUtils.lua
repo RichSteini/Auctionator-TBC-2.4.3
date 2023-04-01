@@ -771,9 +771,12 @@ end
 
 -----------------------------------------
 
-local goldicon		= "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:4:0|t"
-local silvericon	= "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:4:0|t"
-local coppericon	= "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:4:0|t"
+--local goldicon		= "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:4:0|t"
+--local silvericon	= "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:4:0|t"
+--local coppericon	= "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:4:0|t"
+local goldicon = [[|cffffffff|r|TInterface\AddOns\ItemPriceTooltip\Textures\Gold:0:0:1|t]]
+local silvericon = [[|cffffffff|r|TInterface\AddOns\ItemPriceTooltip\Textures\Silver:0:0:1|t]]
+local coppericon = [[|cffffffff|r|TInterface\AddOns\ItemPriceTooltip\Textures\Copper:0:0:1|t]]
 
 -----------------------------------------
 

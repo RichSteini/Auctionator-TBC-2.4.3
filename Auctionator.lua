@@ -3018,7 +3018,7 @@ function Atr_SetDepositText()
 	if (auctionCount > 0) then
 		local duration = UIDropDownMenu_GetSelectedValue(Atr_Duration);
 	
-		local deposit1 = CalculateAuctionDeposit (duration) / auctionCount;
+		local deposit1 = CalculateAuctionDeposit (720 * 2^(duration-1)) / auctionCount;
 		local numAuctionString = "";
 		if (Atr_Batch_NumAuctions:GetNumber() > 1) then
 			numAuctionString = "  |cffff55ff x"..Atr_Batch_NumAuctions:GetNumber();
