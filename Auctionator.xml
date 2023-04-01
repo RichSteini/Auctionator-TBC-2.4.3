@@ -845,8 +845,8 @@
 			</Button>
 
 			<Button name="Atr_CancelSelectionButton" inherits="UIPanelButtonTemplate"  text="Cancel">
-				<Size><AbsDimension x="80" y="22"/>	</Size>
-				<Anchors><Anchor point="RIGHT" relativeTo="AuctionatorCloseButton" relativePoint="LEFT"></Anchor></Anchors>
+				<Size><AbsDimension x="113" y="22"/>	</Size>
+				<Anchors><Anchor point="RIGHT" relativeTo="AuctionatorCloseButton" relativePoint="LEFT"><Offset><AbsDimension x="2" y="0"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>
 						Atr_CancelSelection_OnClick();
@@ -856,7 +856,7 @@
 
 			<Button name="Atr_Buy1_Button" text="Buy" inherits="UIPanelButtonTemplate" >
 				<Size><AbsDimension x="80" y="22"/>	</Size>
-				<Anchors><Anchor point="RIGHT" relativeTo="Atr_CancelSelectionButton" relativePoint="LEFT"></Anchor></Anchors>
+				<Anchors><Anchor point="RIGHT" relativeTo="Atr_CancelSelectionButton" relativePoint="LEFT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>Atr_Buy1_Onclick();</OnClick>
 				</Scripts>
