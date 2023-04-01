@@ -4308,9 +4308,9 @@ end
 
 function Atr_Duration_Initialize(self)
 
-	Atr_Dropdown_AddPick (self, "12 hours",	1, Atr_Duration_OnClick);
-	Atr_Dropdown_AddPick (self, "24 hours",	2, Atr_Duration_OnClick);
-	Atr_Dropdown_AddPick (self, "48 hours",	3, Atr_Duration_OnClick);
+	Atr_Dropdown_AddPick (self, string.format(FORMATED_HOURS, 12),	1, Atr_Duration_OnClick);
+	Atr_Dropdown_AddPick (self, string.format(FORMATED_HOURS, 24),	2, Atr_Duration_OnClick);
+	Atr_Dropdown_AddPick (self, string.format(FORMATED_HOURS, 48),	3, Atr_Duration_OnClick);
 
 end
 
