@@ -110,6 +110,7 @@ local gActivePane;
 local gShopPane;
 
 local gCurrentPane;
+local gAtr_ItemSlotInfo;
 
 local gHistoryItemList = {};
 
@@ -160,6 +161,7 @@ function Atr_RegisterEvents(self)
 	self:RegisterEvent("NEW_AUCTION_UPDATE");
 	self:RegisterEvent("CHAT_MSG_ADDON");
 	self:RegisterEvent("PLAYER_ENTERING_WORLD");
+	self:RegisterEvent("BAG_UPDATE");
 
 end
 
@@ -188,7 +190,12 @@ function Atr_EventHandler(self, event, ...)
 
 	if (event == "UNIT_SPELLCAST_SENT")			then	Atr_OnSpellCastSent(...); 		end;
 	if (event == "UNIT_SPELLCAST_SUCCEEDED")	then	Atr_OnSpellCastSucess(...); 		end;
-	if (event == "BAG_UPDATE")					then	Atr_OnBagUpdate(...); 		end;
+	if (event == "BAG_UPDATE")					then
+		if AUCTIONATOR_SAVEDVARS.LOG_DE_DATA then
+			Atr_OnBagUpdate(...); 
+		end
+		Atr_BuildItemSlotInfo()
+	end;
 
 end
 
@@ -634,7 +641,7 @@ function EnableDisableDElogging (verbose, delay)
 		Atr_core:RegisterEvent("UNIT_SPELLCAST_SENT");
 		Atr_core:RegisterEvent("UNIT_SPELLCAST_STOP");
 		Atr_core:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED");
-		Atr_core:RegisterEvent("BAG_UPDATE");
+		--Atr_core:RegisterEvent("BAG_UPDATE");
 
 		if (type(delay) == 'number') then
 			zc.AddDeferredCall (delay, "Atr_Announce_DEmsg")
@@ -648,7 +655,7 @@ function EnableDisableDElogging (verbose, delay)
 		Atr_core:UnregisterEvent("UNIT_SPELLCAST_SENT");
 		Atr_core:UnregisterEvent("UNIT_SPELLCAST_STOP");
 		Atr_core:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED");
-		Atr_core:UnregisterEvent("BAG_UPDATE");
+		--Atr_core:UnregisterEvent("BAG_UPDATE");
 
 		if (verbose) then
 			zc.msg_anm ("disenchanting info is no longer being logged")
@@ -1077,6 +1084,34 @@ function Atr_OnSpellCastSucess (...)
 end
 
 -----------------------------------------
+function Atr_BuildItemSlotInfo ()
+	if gSellPane then
+		gSellPane.UINeedsUpdate = true;
+	end
+
+	gAtr_ItemSlotInfo = {}
+	for b = 1, #kBagIDs do
+		local bagID = kBagIDs[b];
+		local numslots = GetContainerNumSlots (bagID);
+		for slotID = 1,numslots do
+			local itemLink = GetContainerItemLink(bagID, slotID);
+			if (itemLink) then
+				local itemName				= GetItemInfo(itemLink);
+				local texture, itemCount	= GetContainerItemInfo(bagID, slotID);
+				if not gAtr_ItemSlotInfo[itemName] then
+					gAtr_ItemSlotInfo[itemName] = {}
+				end
+
+				if not gAtr_ItemSlotInfo[itemName][itemCount] then
+					gAtr_ItemSlotInfo[itemName][itemCount] = {}
+					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
+				end
+				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=b, slot=slotID})
+				gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
+			end
+		end
+	end
+end
 
 function Atr_OnBagUpdate (...)
 
@@ -2778,6 +2813,9 @@ local gPrevSellItemLink;
 function Atr_OnNewAuctionUpdate()
 	
 --	zz ("gAtr_ClickAuctionSell:", gAtr_ClickAuctionSell);
+	if not gAtr_ItemSlotInfo then
+		Atr_BuildItemSlotInfo()
+	end
 	
 	if (not gAtr_ClickAuctionSell) then
 		gPrevSellItemLink = nil;
@@ -2810,7 +2848,9 @@ function Atr_OnNewAuctionUpdate()
 			gSellPane.totalItems	= Atr_GetNumItemInBags (auctionItemName);
 			gSellPane.fullStackSize = auctionLink and (select (8, GetItemInfo (auctionLink))) or 0;
 
-			local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+			--local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+			local prefStackSize = auctionCount;
+			local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
 			
 			if (time() - gAutoSingleton < 5) then
 				Atr_SetInitialStacking (1, 1);
@@ -2833,7 +2873,9 @@ function Atr_OnNewAuctionUpdate()
 		
 	elseif (Atr_StackSize() ~= auctionCount) then
 	
-		local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+		--local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+		local prefStackSize = auctionCount;
+		local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
 
 		Atr_SetInitialStacking (prefNumStacks, prefStackSize);
 
@@ -2966,11 +3008,14 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 			Atr_SetTextureButtonByTexture ("Atr_SellControls_Tex", Atr_StackSize(), auctionTexture);
 
 			
+			--[[
 			local maxAuctions = 0;
 			if (Atr_StackSize() > 0) then
 				maxAuctions = math.floor (gCurrentPane.totalItems / Atr_StackSize());
 			end
-			
+			]]
+			local slotI = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
+			local maxAuctions = (slotI and slotI[1]) or 0
 			Atr_Batch_MaxAuctions_Text:SetText (ZT("max")..": "..maxAuctions);
 			Atr_Batch_MaxStacksize_Text:SetText (ZT("max")..": "..gCurrentPane.fullStackSize);
 			
@@ -3004,8 +3049,10 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 	local pricesOK	= (start > 0 and (start <= buyout or buyout == 0) and (auctionItemName ~= nil));
 	
 	local numToSell = Atr_Batch_NumAuctions:GetNumber() * Atr_Batch_Stacksize:GetNumber();
+	local slotInfo = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
+	local sellCheck = slotInfo and slotInfo[1] >= Atr_Batch_NumAuctions:GetNumber();
 
-	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and (numToSell <= gCurrentPane.totalItems));
+	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and sellCheck and numToSell > 0 and (numToSell <= gCurrentPane.totalItems));
 	
 end
 
