@@ -224,24 +224,25 @@ function Atr_CheckClassMappings ()
 
 	Atr_Check1ClassMapping (1, nil,		"Weapon")
 	Atr_Check1ClassMapping (2, nil,		"Armor")
-	Atr_Check1ClassMapping (5, nil,		"Glyph")
-	Atr_Check1ClassMapping (8, nil,		"Gem")
+	--Atr_Check1ClassMapping (5, nil,		"Glyph")
+	Atr_Check1ClassMapping (9, nil,		"Gem")
 	Atr_Check1ClassMapping (4, 6,		"Item Enhancement")
 	Atr_Check1ClassMapping (4, 2,		"Potion")
 	Atr_Check1ClassMapping (4, 3,		"Elixir")
 	Atr_Check1ClassMapping (4, 4,		"Flask")
-	Atr_Check1ClassMapping (6, 6,		"Herb")
+	Atr_Check1ClassMapping (5, 6,		"Herb")
 end
 
 -----------------------------------------
 
-function Atr_IsGlyph				(itemLink)		return (Atr_IsClass (itemLink, 5));		end
-function Atr_IsGem					(itemLink)		return (Atr_IsClass (itemLink, 8));		end
+--function Atr_IsGlyph				(itemLink)		return (Atr_IsClass (itemLink, 5));		end
+function Atr_IsGlyph				(itemLink)		return false; end
+function Atr_IsGem					(itemLink)		return (Atr_IsClass (itemLink, 9));		end
 function Atr_IsItemEnhancement		(itemLink)		return (Atr_IsClass (itemLink, 4, 6));	end
 function Atr_IsPotion				(itemLink)		return (Atr_IsClass (itemLink, 4, 2));	end
 function Atr_IsElixir				(itemLink)		return (Atr_IsClass (itemLink, 4, 3));	end
 function Atr_IsFlask				(itemLink)		return (Atr_IsClass (itemLink, 4, 4));	end
-function Atr_IsHerb					(itemLink)		return (Atr_IsClass (itemLink, 6, 6));	end
+function Atr_IsHerb					(itemLink)		return (Atr_IsClass (itemLink, 5, 6));	end
 
 -----------------------------------------
 -- if Blizz introduces new auction classes this might need to change
