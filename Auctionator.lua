@@ -1106,7 +1106,7 @@ function Atr_BuildItemSlotInfo ()
 					gAtr_ItemSlotInfo[itemName][itemCount] = {}
 					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
 				end
-				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=b, slot=slotID})
+				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=b-1, slot=slotID})
 				gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
 			end
 		end
@@ -1628,13 +1628,37 @@ function Atr_CreateAuction_OnClick ()
 	gJustPosted.StackSize			= Atr_StackSize();
 	gJustPosted.NumStacks			= Atr_Batch_NumAuctions:GetNumber();
 
+	if gJustPosted.NumStacks > 1 then
+		if gAtr_MultiSellInProgress then
+			gJustPosted.StacksSoFar = gJustPosted.StacksSoFar + 1
+		else
+			gJustPosted.StacksPrev = 0;
+			gAtr_MultiSellInProgress = true;
+			gJustPosted.StacksSoFar = 1;
+		end
+	end
+
 	local duration				= UIDropDownMenu_GetSelectedValue(Atr_Duration);
 	local stackStartingPrice	= MoneyInputFrame_GetCopper(Atr_StartingPrice);
 	local stackBuyoutPrice		= MoneyInputFrame_GetCopper(Atr_StackPrice);
 
 	Atr_Memorize_Stacking_If();
+	local slotInfo;
+	for k, v in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize]) do
+		if type(v) == "table" then
+			slotInfo = v
+			break
+		end
+	end
 
-	StartAuction (stackStartingPrice, stackBuyoutPrice, 720 * 2^(duration-1), gJustPosted.StackSize, gJustPosted.NumStacks);
+	ClearCursor()
+	ClickAuctionSellItemButton()
+	ClearCursor()
+	PickupContainerItem(slotInfo.bag, slotInfo.slot)
+	ClickAuctionSellItemButton()
+	ClearCursor()
+
+	StartAuction (stackStartingPrice, stackBuyoutPrice, 720 * 2^(duration-1));
 	
 	Atr_SetToShowCurrent();
 end
@@ -1743,6 +1767,27 @@ end
 -----------------------------------------
 
 function Atr_OnAuctionOwnedUpdate ()
+
+	if gAtr_MultiSellInProgress then
+			
+		local delta = gJustPosted.StacksSoFar - gJustPosted.StacksPrev;
+
+		gJustPosted.StacksPrev = gJustPosted.StacksSoFar;
+
+		Atr_AddToScan (gJustPosted.ItemLink, gJustPosted.ItemName, gJustPosted.StackSize, gJustPosted.BuyoutPrice, delta);
+		
+		if (gJustPosted.StacksSoFar == gJustPosted.NumStacks) then
+			Atr_LogMsg (gJustPosted.ItemLink, gJustPosted.StackSize, gJustPosted.BuyoutPrice, gJustPosted.NumStacks);
+			Atr_AddHistoricalPrice (gJustPosted.ItemName, gJustPosted.BuyoutPrice / gJustPosted.StackSize, gJustPosted.StackSize, gJustPosted.ItemLink);
+			gAtr_MultiSellInProgress = false; -- reset
+			gSellPane.UINeedsUpdate = true;
+			Atr_BuildItemSlotInfo()
+			--Atr_core:RegisterEvent("BAG_UPDATE")
+		else
+			Atr_CreateAuction_OnClick () -- sell loop
+			return
+		end
+	end
 
 	gItemPostingInProgress = false;
 	
@@ -2816,7 +2861,7 @@ function Atr_OnNewAuctionUpdate()
 	if not gAtr_ItemSlotInfo then
 		Atr_BuildItemSlotInfo()
 	end
-	
+
 	if (not gAtr_ClickAuctionSell) then
 		gPrevSellItemLink = nil;
 		return;
