@@ -111,6 +111,8 @@ local gShopPane;
 
 local gCurrentPane;
 local gAtr_ItemSlotInfo;
+local gAtr_EmptySlot;
+local gAtr_CustomStackUpdateRequired;
 
 local gHistoryItemList = {};
 
@@ -1085,11 +1087,8 @@ end
 
 -----------------------------------------
 function Atr_BuildItemSlotInfo ()
-	if gSellPane then
-		gSellPane.UINeedsUpdate = true;
-	end
-
 	gAtr_ItemSlotInfo = {}
+	gAtr_EmptySlot = nil
 	for b = 1, #kBagIDs do
 		local bagID = kBagIDs[b];
 		local numslots = GetContainerNumSlots (bagID);
@@ -1107,10 +1106,24 @@ function Atr_BuildItemSlotInfo ()
 					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
 				end
 				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=b-1, slot=slotID})
+				--table.sort(gAtr_ItemSlotInfo[itemName])
 				gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
+			else
+				if not gAtr_EmptySlot then
+					gAtr_EmptySlot = {bag=b-1, slot=slotID}
+				end
 			end
 		end
 	end
+
+	if gAtr_CustomStackUpdateRequired then
+		Atr_CreateAuction_OnClick ()
+	else
+		if gSellPane then
+			gSellPane.UINeedsUpdate = true;
+		end
+	end
+
 end
 
 function Atr_OnBagUpdate (...)
@@ -1627,40 +1640,86 @@ function Atr_CreateAuction_OnClick ()
 	gJustPosted.BuyoutPrice			= MoneyInputFrame_GetCopper(Atr_StackPrice);
 	gJustPosted.StackSize			= Atr_StackSize();
 	gJustPosted.NumStacks			= Atr_Batch_NumAuctions:GetNumber();
+	if not gAtr_CustomStackUpdateRequired and not gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize] then -- Custom stack is required
+		gAtr_CustomStackUpdateRequired = true;
+		local source, destination, diff;
+		-- Destination slot
+		for stackSize, slots in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName]) do
+			if stackSize < gJustPosted.StackSize then
+				diff = gJustPosted.StackSize - stackSize 
+				for _, dest in pairs(slots) do
+					if type(dest) == "table" then
+						destination = dest
+						break
+					end
+				end
+			end
+		end
 
-	if gJustPosted.NumStacks > 1 then
-		if gAtr_MultiSellInProgress then
-			gJustPosted.StacksSoFar = gJustPosted.StacksSoFar + 1
-		else
-			gJustPosted.StacksPrev = 0;
-			gAtr_MultiSellInProgress = true;
-			gJustPosted.StacksSoFar = 1;
+		-- No proper non empty slot
+		if not destination then
+			destination = gAtr_EmptySlot
+			diff = gJustPosted.StackSize
+		end
+
+		-- Source slot
+		for stackSize, slots in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName]) do
+			if stackSize >= diff then
+				for _, src in pairs(slots) do
+					if type(src) == "table" and src ~= destination then
+						source = src
+						break
+					end
+				end
+			end
+		end -- button should not be pressable when source or destination not available
+
+		-- Move it
+		ClearCursor()
+		ClickAuctionSellItemButton()
+		ClearCursor()
+		SplitContainerItem(source.bag, source.slot, diff)
+		PickupContainerItem(destination.bag, destination.slot)
+		ClearCursor()
+	else
+		if gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize] then
+			gAtr_CustomStackUpdateRequired = false;
+
+			if gJustPosted.NumStacks > 1 then
+				if gAtr_MultiSellInProgress then
+					gJustPosted.StacksSoFar = gJustPosted.StacksSoFar + 1
+				else
+					gJustPosted.StacksPrev = 0;
+					gAtr_MultiSellInProgress = true;
+					gJustPosted.StacksSoFar = 1;
+				end
+			end
+
+			local duration				= UIDropDownMenu_GetSelectedValue(Atr_Duration);
+			local stackStartingPrice	= MoneyInputFrame_GetCopper(Atr_StartingPrice);
+			local stackBuyoutPrice		= MoneyInputFrame_GetCopper(Atr_StackPrice);
+
+			Atr_Memorize_Stacking_If();
+			local slotInfo;
+			for k, v in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize]) do
+				if type(v) == "table" then
+					slotInfo = v
+					break
+				end
+			end
+
+			ClearCursor()
+			ClickAuctionSellItemButton()
+			ClearCursor()
+			PickupContainerItem(slotInfo.bag, slotInfo.slot)
+			ClickAuctionSellItemButton()
+			ClearCursor()
+
+			StartAuction (stackStartingPrice, stackBuyoutPrice, 720 * 2^(duration-1));
+			
+			Atr_SetToShowCurrent();
 		end
 	end
-
-	local duration				= UIDropDownMenu_GetSelectedValue(Atr_Duration);
-	local stackStartingPrice	= MoneyInputFrame_GetCopper(Atr_StartingPrice);
-	local stackBuyoutPrice		= MoneyInputFrame_GetCopper(Atr_StackPrice);
-
-	Atr_Memorize_Stacking_If();
-	local slotInfo;
-	for k, v in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize]) do
-		if type(v) == "table" then
-			slotInfo = v
-			break
-		end
-	end
-
-	ClearCursor()
-	ClickAuctionSellItemButton()
-	ClearCursor()
-	PickupContainerItem(slotInfo.bag, slotInfo.slot)
-	ClickAuctionSellItemButton()
-	ClearCursor()
-
-	StartAuction (stackStartingPrice, stackBuyoutPrice, 720 * 2^(duration-1));
-	
-	Atr_SetToShowCurrent();
 end
 
 
@@ -2893,9 +2952,9 @@ function Atr_OnNewAuctionUpdate()
 			gSellPane.totalItems	= Atr_GetNumItemInBags (auctionItemName);
 			gSellPane.fullStackSize = auctionLink and (select (8, GetItemInfo (auctionLink))) or 0;
 
-			--local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
-			local prefStackSize = auctionCount;
-			local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
+			local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+			--local prefStackSize = auctionCount;
+			--local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
 			
 			if (time() - gAutoSingleton < 5) then
 				Atr_SetInitialStacking (1, 1);
@@ -2918,9 +2977,9 @@ function Atr_OnNewAuctionUpdate()
 		
 	elseif (Atr_StackSize() ~= auctionCount) then
 	
-		--local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
-		local prefStackSize = auctionCount;
-		local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
+		local prefNumStacks, prefStackSize = Atr_GetSellStacking (auctionLink, auctionCount, gSellPane.totalItems);
+		--local prefStackSize = auctionCount;
+		--local prefNumStacks = gAtr_ItemSlotInfo[auctionItemName][auctionCount][1]
 
 		Atr_SetInitialStacking (prefNumStacks, prefStackSize);
 
@@ -3053,14 +3112,13 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 			Atr_SetTextureButtonByTexture ("Atr_SellControls_Tex", Atr_StackSize(), auctionTexture);
 
 			
-			--[[
 			local maxAuctions = 0;
 			if (Atr_StackSize() > 0) then
 				maxAuctions = math.floor (gCurrentPane.totalItems / Atr_StackSize());
 			end
-			]]
-			local slotI = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
-			local maxAuctions = (slotI and slotI[1]) or 0
+
+			--local slotI = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
+			--local maxAuctions = (slotI and slotI[1]) or 0
 			Atr_Batch_MaxAuctions_Text:SetText (ZT("max")..": "..maxAuctions);
 			Atr_Batch_MaxStacksize_Text:SetText (ZT("max")..": "..gCurrentPane.fullStackSize);
 			
@@ -3095,9 +3153,9 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 	
 	local numToSell = Atr_Batch_NumAuctions:GetNumber() * Atr_Batch_Stacksize:GetNumber();
 	local slotInfo = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
-	local sellCheck = slotInfo and slotInfo[1] >= Atr_Batch_NumAuctions:GetNumber();
+	--local sellCheck = slotInfo and slotInfo[1] >= Atr_Batch_NumAuctions:GetNumber();
 
-	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and sellCheck and numToSell > 0 and (numToSell <= gCurrentPane.totalItems));
+	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and numToSell > 0 and (numToSell <= gCurrentPane.totalItems));
 	
 end
 
