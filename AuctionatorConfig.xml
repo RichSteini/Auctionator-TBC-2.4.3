@@ -656,7 +656,7 @@
 
 		<Scripts>
 			<OnLoad>
-				Atr_LoadOptionsSubPanel (self, ZT("Clears"), ZT("Clears"), ZT("The features below will help you clear out data that Auctionator stores.  Typically you would only need this in the event that that data gets corrupted."));
+				Atr_LoadOptionsSubPanel (self, ZT("Clears"), ZT("Clears"), ZT("The features below will help you clear out data that Auctionator \nstores. Typically you would only need this in the event that data \ngets corrupted."));
 			</OnLoad>
 		</Scripts>
 
@@ -733,21 +733,12 @@
 
 		<Scripts>
 			<OnLoad>
-				Atr_LoadOptionsSubPanel (self, ZT("Shopping Lists"), ZT("Shopping Lists"));
+				Atr_LoadOptionsSubPanel (self, ZT("Shopping Lists"), ZT("Shopping Lists"), ZT("Select multiple shopping lists by holding down the control key \nwhile clicking"));
 			</OnLoad>
 			<OnUpdate>
 				Atr_ShpList_Options_Update (self, elapsed);
 			</OnUpdate>
 		</Scripts>
-
-		<Layers>
-			<Layer level="BACKGROUND">
-				<FontString text="Select multiple shopping lists by holding down the control key while clicking" inherits="GameFontDarkGraySmall">
-					<Size x="125"/>
-					<Anchors><Anchor point="BOTTOMRIGHT" x="-40" y="16"/></Anchors>
-				</FontString>
-			</Layer>
-		</Layers>
 
 		<Frames>
 			<ScrollFrame name="Atr_ShpList_ScrollFrame" inherits="FauxScrollFrameTemplate">
