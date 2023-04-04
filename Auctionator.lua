@@ -1089,8 +1089,7 @@ end
 function Atr_BuildItemSlotInfo ()
 	gAtr_ItemSlotInfo = {}
 	gAtr_EmptySlot = nil
-	for b = 1, #kBagIDs do
-		local bagID = kBagIDs[b];
+	for bagID = 0, 4 do
 		local numslots = GetContainerNumSlots (bagID);
 		for slotID = 1,numslots do
 			local itemLink = GetContainerItemLink(bagID, slotID);
@@ -1105,12 +1104,12 @@ function Atr_BuildItemSlotInfo ()
 					gAtr_ItemSlotInfo[itemName][itemCount] = {}
 					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
 				end
-				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=b-1, slot=slotID})
+				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=bagID, slot=slotID})
 				--table.sort(gAtr_ItemSlotInfo[itemName])
 				gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
 			else
 				if not gAtr_EmptySlot then
-					gAtr_EmptySlot = {bag=b-1, slot=slotID}
+					gAtr_EmptySlot = {bag=bagID, slot=slotID}
 				end
 			end
 		end
@@ -3154,8 +3153,26 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 	local numToSell = Atr_Batch_NumAuctions:GetNumber() * Atr_Batch_Stacksize:GetNumber();
 	local slotInfo = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
 	--local sellCheck = slotInfo and slotInfo[1] >= Atr_Batch_NumAuctions:GetNumber();
+	if not slotInfo and gAtr_ItemSlotInfo[auctionItemName] then
+		for stackSize,_ in pairs(gAtr_ItemSlotInfo[auctionItemName]) do
+			if stackSize < Atr_Batch_Stacksize:GetNumber() then
+				slotInfo = true
+				break
+			end
+		end
+	end
 
-	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and numToSell > 0 and (numToSell <= gCurrentPane.totalItems));
+	local sellCheck;
+	if slotInfo or gAtr_EmptySlot then
+		sellCheck = true;
+		Atr_StackWarning_Text:Hide();
+	else
+		if gAtr_ItemSlotInfo[auctionItemName] then
+			Atr_StackWarning_Text:Show();
+		end
+	end
+
+	zc.EnableDisable (Atr_CreateAuctionButton,	pricesOK and sellCheck and numToSell > 0 and (numToSell <= gCurrentPane.totalItems));
 	
 end
 

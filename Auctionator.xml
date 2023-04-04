@@ -584,7 +584,14 @@
 							<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="10" y="-342"/></Offset></Anchor></Anchors>
 						</FontString>
 
+						<FontString name="Atr_StackWarning_Text" justifyH="LEFT" hidden="true" inherits="GameFontHighlightSmall" text="Error: Unable to assemble stack size, make space in your bags!">
+							<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="10" y="-210"/></Offset></Anchor></Anchors>
+							<Size><AbsDimension x="180" y="100"/></Size>
+							<Color r="1" g="0" b="0"/>
+						</FontString>
+
 					</Layer>
+
 				</Layers>
 				
 				<Frames>
