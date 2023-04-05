@@ -1572,8 +1572,9 @@ end
 
 -----------------------------------------
 
-local function Atr_LoadContainerItemToSellPane(slot)
+local function Atr_LoadContainerItemToSellPane(button)
 
+	local slot = this
 	local bagID  = slot:GetParent():GetID();
 	local slotID = slot:GetID();
 
@@ -1599,14 +1600,14 @@ end
 
 -----------------------------------------
 
-function Atr_ContainerFrameItemButton_OnClick (self, button)
+function Atr_ContainerFrameItemButton_OnClick (button)
 
 	if (AuctionFrame and AuctionFrame:IsShown() and zc.StringSame (button, "RightButton")) then
 
 		local selectedTab = PanelTemplates_GetSelectedTab (AuctionFrame);
 	
 		if (selectedTab == 1 or selectedTab == 2 or Atr_IsAuctionatorTab(selectedTab)) then
-			Atr_LoadContainerItemToSellPane (self);
+			Atr_LoadContainerItemToSellPane (button);
 		end
 	end
 
@@ -1614,15 +1615,15 @@ end
 
 -----------------------------------------
 
-function Atr_ContainerFrameItemButton_OnModifiedClick (self, button)
+function Atr_ContainerFrameItemButton_OnModifiedClick (button)
 
 	if (AUCTIONATOR_ENABLE_ALT ~= 0 and	AuctionFrame:IsShown() and IsAltKeyDown()) then
 	
-		Atr_LoadContainerItemToSellPane(self);
+		Atr_LoadContainerItemToSellPane(button);
 		return;
 	end
 	
-	return auctionator_orig_ContainerFrameItemButton_OnModifiedClick (self, button);
+	return auctionator_orig_ContainerFrameItemButton_OnModifiedClick (button);
 end
 
 
