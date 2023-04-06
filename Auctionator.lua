@@ -1096,17 +1096,19 @@ function Atr_BuildItemSlotInfo ()
 			if (itemLink) then
 				local itemName				= GetItemInfo(itemLink);
 				local texture, itemCount	= GetContainerItemInfo(bagID, slotID);
-				if not gAtr_ItemSlotInfo[itemName] then
-					gAtr_ItemSlotInfo[itemName] = {}
-				end
+				if itemName then
+					if not gAtr_ItemSlotInfo[itemName] then
+						gAtr_ItemSlotInfo[itemName] = {}
+					end
 
-				if not gAtr_ItemSlotInfo[itemName][itemCount] then
-					gAtr_ItemSlotInfo[itemName][itemCount] = {}
-					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
+					if not gAtr_ItemSlotInfo[itemName][itemCount] then
+						gAtr_ItemSlotInfo[itemName][itemCount] = {}
+						table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
+					end
+					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=bagID, slot=slotID})
+					--table.sort(gAtr_ItemSlotInfo[itemName])
+					gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
 				end
-				table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=bagID, slot=slotID})
-				--table.sort(gAtr_ItemSlotInfo[itemName])
-				gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
 			else
 				if not gAtr_EmptySlot then
 					gAtr_EmptySlot = {bag=bagID, slot=slotID}
