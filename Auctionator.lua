@@ -112,7 +112,7 @@ local gShopPane;
 local gCurrentPane;
 local gAtr_ItemSlotInfo;
 local gAtr_EmptySlot;
-local gAtr_CustomStackUpdateRequired;
+local gAtr_CustomStackUpdate;
 
 local gHistoryItemList = {};
 
@@ -1100,24 +1100,21 @@ function Atr_BuildItemSlotInfo ()
 					if not gAtr_ItemSlotInfo[itemName] then
 						gAtr_ItemSlotInfo[itemName] = {}
 					end
-
-					if not gAtr_ItemSlotInfo[itemName][itemCount] then
-						gAtr_ItemSlotInfo[itemName][itemCount] = {}
-						table.insert(gAtr_ItemSlotInfo[itemName][itemCount], 0) -- stackcount
-					end
-					table.insert(gAtr_ItemSlotInfo[itemName][itemCount], {bag=bagID, slot=slotID})
-					--table.sort(gAtr_ItemSlotInfo[itemName])
-					gAtr_ItemSlotInfo[itemName][itemCount][1] = gAtr_ItemSlotInfo[itemName][itemCount][1] + 1
+					table.insert(gAtr_ItemSlotInfo[itemName], {stackSize = itemCount, bag=bagID, slot=slotID})
 				end
 			else
 				if not gAtr_EmptySlot then
-					gAtr_EmptySlot = {bag=bagID, slot=slotID}
+					gAtr_EmptySlot = {stackSize = 0, bag=bagID, slot=slotID}
 				end
 			end
 		end
 	end
 
-	if gAtr_CustomStackUpdateRequired then
+	for itemName, _ in pairs(gAtr_ItemSlotInfo) do
+		table.sort(gAtr_ItemSlotInfo[itemName], function (a, b) return a.stackSize > b.stackSize end)
+	end
+
+	if gAtr_CustomStackUpdate then
 		Atr_CreateAuction_OnClick ()
 	else
 		if gSellPane then
@@ -1632,61 +1629,104 @@ end
 
 
 -----------------------------------------
+local function CustomBagSlotCheck(slot)
+	local itemLink = GetContainerItemLink(slot.bag, slot.slot);
+	if (itemLink) then
+		local itemName				= GetItemInfo(itemLink);
+		local texture, itemCount	= GetContainerItemInfo(slot.bag, slot.slot);
+		if itemName == slot.itemName and itemCount == slot.stackSize then
+			return true
+		end
+	end
+
+	if not itemLink and slot.stackSize == 0 then
+		return true
+	end
+
+	return false
+end
 
 function Atr_CreateAuction_OnClick ()
 
-	gAtr_SellTriggeredByAuctionator = true;
-
-	gJustPosted.ItemName			= gCurrentPane.activeScan.itemName;
-	gJustPosted.ItemLink			= gCurrentPane.activeScan.itemLink;
-	gJustPosted.BuyoutPrice			= MoneyInputFrame_GetCopper(Atr_StackPrice);
-	gJustPosted.StackSize			= Atr_StackSize();
-	gJustPosted.NumStacks			= Atr_Batch_NumAuctions:GetNumber();
-	if not gAtr_CustomStackUpdateRequired and not gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize] then -- Custom stack is required
-		gAtr_CustomStackUpdateRequired = true;
-		local source, destination, diff;
-		-- Destination slot
-		for stackSize, slots in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName]) do
-			if stackSize < gJustPosted.StackSize then
-				diff = gJustPosted.StackSize - stackSize 
-				for _, dest in pairs(slots) do
-					if type(dest) == "table" then
-						destination = dest
-						break
-					end
-				end
-			end
+	if gAtr_CustomStackUpdate then
+		gAtr_CustomStackUpdate.elapsedEvents = gAtr_CustomStackUpdate.elapsedEvents + 1
+		-- Check slot
+		if CustomBagSlotCheck(gAtr_CustomStackUpdate.expectedSourceSlot) and CustomBagSlotCheck(gAtr_CustomStackUpdate.expectedDestinationSlot) then
+			gAtr_CustomStackUpdate = nil
+			Atr_CreateAuction_OnClick() -- could be avoided with separate function
+			return
 		end
-
-		-- No proper non empty slot
-		if not destination then
-			destination = gAtr_EmptySlot
-			diff = gJustPosted.StackSize
+		if gAtr_CustomStackUpdate.elapsedEvents > 30 then
+			gAtr_CustomStackUpdate = nil
 		end
-
-		-- Source slot
-		for stackSize, slots in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName]) do
-			if stackSize >= diff then
-				for _, src in pairs(slots) do
-					if type(src) == "table" and src ~= destination then
-						source = src
-						break
-					end
-				end
-			end
-		end -- button should not be pressable when source or destination not available
-
-		-- Move it
-		ClearCursor()
-		ClickAuctionSellItemButton()
-		ClearCursor()
-		SplitContainerItem(source.bag, source.slot, diff)
-		PickupContainerItem(destination.bag, destination.slot)
-		ClearCursor()
 	else
-		if gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize] then
-			gAtr_CustomStackUpdateRequired = false;
+		gAtr_SellTriggeredByAuctionator = true;
 
+		gJustPosted.ItemName			= gCurrentPane.activeScan.itemName;
+		gJustPosted.ItemLink			= gCurrentPane.activeScan.itemLink;
+		gJustPosted.BuyoutPrice			= MoneyInputFrame_GetCopper(Atr_StackPrice);
+		gJustPosted.StackSize			= Atr_StackSize();
+		gJustPosted.NumStacks			= Atr_Batch_NumAuctions:GetNumber();
+		local slotInfo = gAtr_ItemSlotInfo[gJustPosted.ItemName]
+		if not slotInfo then
+			-- someone let the item disappear?
+			return
+		end
+		-- best means, least amount of moves required
+		local bestDestinationSlot, missingAmount;
+		for k, v in pairs(slotInfo) do
+			if v.stackSize <= gJustPosted.StackSize then
+				missingAmount = gJustPosted.StackSize - v.stackSize
+				bestDestinationSlot = v
+				break
+			end
+		end
+		-- No proper non empty slot
+		if not bestDestinationSlot then
+			bestDestinationSlot = gAtr_EmptySlot
+			missingAmount = gJustPosted.StackSize
+		end
+		-- best source is the one that is closest to the missing amount
+		local bestSourceSlot;
+		if missingAmount > 0 then
+			for k, v in pairs(slotInfo) do
+				if v ~= bestDestinationSlot then
+					if v.stackSize - missingAmount < 0 then
+						if not bestSourceSlot then
+							bestSourceSlot = v
+						end
+						break
+					end
+					bestSourceSlot = v
+				end
+			end
+		end
+
+		if bestSourceSlot then -- something needs to be moved
+			local moveAmount = missingAmount;
+			if moveAmount > bestSourceSlot.stackSize then
+				moveAmount = bestSourceSlot.stackSize
+			end
+			-- Move it
+			ClearCursor()
+			ClickAuctionSellItemButton()
+			ClearCursor()
+			SplitContainerItem(bestSourceSlot.bag, bestSourceSlot.slot, moveAmount)
+			PickupContainerItem(bestDestinationSlot.bag, bestDestinationSlot.slot)
+			ClearCursor()
+			
+			local expectedDestinationSlot = {}
+			expectedDestinationSlot.bag = bestDestinationSlot.bag
+			expectedDestinationSlot.slot = bestDestinationSlot.slot
+			expectedDestinationSlot.itemName = gJustPosted.ItemName
+			expectedDestinationSlot.stackSize = bestDestinationSlot.stackSize + moveAmount
+			local expectedSourceSlot = {}
+			expectedSourceSlot.bag = bestSourceSlot.bag
+			expectedSourceSlot.slot = bestSourceSlot.slot
+			expectedSourceSlot.itemName = gJustPosted.ItemName
+			expectedSourceSlot.stackSize = bestSourceSlot.stackSize - moveAmount
+			gAtr_CustomStackUpdate = {expectedSourceSlot = expectedSourceSlot, expectedDestinationSlot = expectedDestinationSlot, elapsedEvents = 0}
+		else -- proper stack size start the auction
 			if gJustPosted.NumStacks > 1 then
 				if gAtr_MultiSellInProgress then
 					gJustPosted.StacksSoFar = gJustPosted.StacksSoFar + 1
@@ -1702,18 +1742,11 @@ function Atr_CreateAuction_OnClick ()
 			local stackBuyoutPrice		= MoneyInputFrame_GetCopper(Atr_StackPrice);
 
 			Atr_Memorize_Stacking_If();
-			local slotInfo;
-			for k, v in pairs(gAtr_ItemSlotInfo[gJustPosted.ItemName][gJustPosted.StackSize]) do
-				if type(v) == "table" then
-					slotInfo = v
-					break
-				end
-			end
 
 			ClearCursor()
 			ClickAuctionSellItemButton()
 			ClearCursor()
-			PickupContainerItem(slotInfo.bag, slotInfo.slot)
+			PickupContainerItem(bestDestinationSlot.bag, bestDestinationSlot.slot)
 			ClickAuctionSellItemButton()
 			ClearCursor()
 
