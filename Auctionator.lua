@@ -2804,6 +2804,9 @@ end
 
 function Atr_OnAuctionHouseClosed()
 
+	gAtr_MultiSellInProgress = false
+	gAtr_CustomStackUpdate = nil
+
 	Atr_HideAllDialogs();
 	
 	Atr_CheckingActive_Finish ();
