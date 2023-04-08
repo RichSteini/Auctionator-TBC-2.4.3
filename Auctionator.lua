@@ -1656,8 +1656,9 @@ function Atr_CreateAuction_OnClick ()
 			Atr_CreateAuction_OnClick() -- could be avoided with separate function
 			return
 		end
-		if gAtr_CustomStackUpdate.elapsedEvents > 30 then
+		if gAtr_CustomStackUpdate.elapsedEvents > 10 then
 			gAtr_CustomStackUpdate = nil
+			gAtr_MultiSellInProgress = false
 		end
 	else
 		gAtr_SellTriggeredByAuctionator = true;
