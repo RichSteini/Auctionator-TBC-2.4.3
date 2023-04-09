@@ -9,8 +9,8 @@
 
 ## Addon folder structure
 
-Rename the downloaded folder to "Auctionator", remove "TBC-2.4.3-main" from the folder name and put the folder in:
-..\Interface\AddOns
+Rename the downloaded folder to "Auctionator", remove "TBC-2.4.3-main" from the folder name and put the folder in:\
+..\Interface\AddOns\
 ..\Interface\AddOns\Auctionator
 
 ## Acknowledgements
