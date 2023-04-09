@@ -15,4 +15,4 @@ Rename the downloaded folder to "Auctionator", remove "TBC-2.4.3-main" from the 
 
 ## Acknowledgements
 
-I only made this version (WOTLK backport) work for the TBC 2.4.3 client by rewriting the multi-sell procedures. If you like the addon want to support the original authors that made it, go to [Auctionator Classic/Retail](https://github.com/Auctionator/Auctionator).
+I only made this version (WOTLK backport) work for the TBC 2.4.3 client by rewriting the multi-sell procedures and fixing some other issues. If you like the addon and want to support the original authors that made it, go to [Auctionator Classic/Retail](https://github.com/Auctionator/Auctionator).
