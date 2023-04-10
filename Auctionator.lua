@@ -3191,23 +3191,23 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 	local pricesOK	= (start > 0 and (start <= buyout or buyout == 0) and (auctionItemName ~= nil));
 	
 	local numToSell = Atr_Batch_NumAuctions:GetNumber() * Atr_Batch_Stacksize:GetNumber();
-	local slotInfo = gAtr_ItemSlotInfo[auctionItemName] and gAtr_ItemSlotInfo[auctionItemName][Atr_Batch_Stacksize:GetNumber()]
-	--local sellCheck = slotInfo and slotInfo[1] >= Atr_Batch_NumAuctions:GetNumber();
-	if not slotInfo and gAtr_ItemSlotInfo[auctionItemName] then
-		for stackSize,_ in pairs(gAtr_ItemSlotInfo[auctionItemName]) do
-			if stackSize < Atr_Batch_Stacksize:GetNumber() then
-				slotInfo = true
+
+	local sellCheck;
+	local slotInfo = gAtr_ItemSlotInfo[auctionItemName]
+	if slotInfo then
+		for k,v in pairs(slotInfo) do
+			if v.stackSize <= Atr_Batch_Stacksize:GetNumber() then
+				sellCheck = true
 				break
 			end
 		end
 	end
 
-	local sellCheck;
-	if slotInfo or gAtr_EmptySlot then
+	if sellCheck or gAtr_EmptySlot then
 		sellCheck = true;
 		Atr_StackWarning_Text:Hide();
 	else
-		if gAtr_ItemSlotInfo[auctionItemName] then
+		if slotInfo then
 			Atr_StackWarning_Text:Show();
 		end
 	end
