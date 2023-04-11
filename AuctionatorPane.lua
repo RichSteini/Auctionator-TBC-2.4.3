@@ -66,6 +66,11 @@ function AtrPane:DoSearch (searchText, IDstring, itemLink, rescanThreshold)
 			self.UINeedsUpdate = true;
 			cacheHit = true;
 		end
+	else
+		if Atr_Search_Button then
+			Atr_Search_Button:Enable()
+			Atr_Adv_Search_Button:Enable()
+		end
 	end
 	
 	return cacheHit;
