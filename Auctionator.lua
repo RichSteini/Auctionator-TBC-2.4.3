@@ -3192,6 +3192,10 @@ function Atr_UpdateUI_SellPane (needsUpdate)
 	
 	local numToSell = Atr_Batch_NumAuctions:GetNumber() * Atr_Batch_Stacksize:GetNumber();
 
+	if not gAtr_ItemSlotInfo then
+		Atr_BuildItemSlotInfo()
+	end
+
 	local sellCheck;
 	local slotInfo = gAtr_ItemSlotInfo[auctionItemName]
 	if slotInfo then
