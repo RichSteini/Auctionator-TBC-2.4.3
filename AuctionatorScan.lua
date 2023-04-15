@@ -1962,13 +1962,13 @@ function Atr_GetNumAuctionItems (which)
 
 	local numBatchAuctions, totalAuctions = GetNumAuctionItems(which);
 	
-	if (totalAuctions > 42554) then
-		if (gNum42555Warnings < 2) then
-			gNum42555Warnings = gNum42555Warnings + 1;
-			zc.msg_anm ("|cffff0000Warning: greater than 42554 auctions: ", totalAuctions, numBatchAuctions);
-		end
-		totalAuctions = 42554;
-	end
+	--if (totalAuctions > 42554) then
+		--if (gNum42555Warnings < 2) then
+			--gNum42555Warnings = gNum42555Warnings + 1;
+			--zc.msg_anm ("|cffff0000Warning: greater than 42554 auctions: ", totalAuctions, numBatchAuctions);
+		--end
+		--totalAuctions = 42554;
+	--end
 	
 	return numBatchAuctions, totalAuctions
 
