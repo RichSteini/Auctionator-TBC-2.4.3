@@ -15,6 +15,7 @@ Locales\frFR.lua
 Locales\svSE.lua
 Locales\esES.lua
 Locales\zhTW.lua
+Locales\zhCN.lua
 
 zcUtils.lua
 
