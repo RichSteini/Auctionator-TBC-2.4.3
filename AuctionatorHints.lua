@@ -1,5 +1,6 @@
 
 local addonName, addonTable = AuctionatorName, AuctionatorAddon;
+local ItemPrice = LibStub("ItemPrice-1.1")
 local zc = addonTable.zc;
 local zz = zc.md;
 
@@ -804,7 +805,8 @@ local function ShowTipWithPricing (tip, link, num)
 		return;
 	end
 
-	local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, _, _, _, _, itemVendorPrice = GetItemInfo (link);
+	local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType = GetItemInfo (link);
+	local itemVendorPrice = ItemPrice:GetPrice(link)
 
 	local vendorPrice	= 0;
 	local auctionPrice	= 0;

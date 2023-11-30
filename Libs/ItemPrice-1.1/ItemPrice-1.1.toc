@@ -1,0 +1,13 @@
+## Interface: 20400
+## LoadOnDemand: 1
+## Title: Lib: ItemPrice-1.1
+## Notes: Library with vendor sell prices for items.
+## Author: Bam
+## Version: 1.1
+## OptionalDeps: 
+## X-Category: Library
+## X-AceForum: 5875
+## X-License: LGPL v2.1
+
+LibStub\LibStub.lua
+lib.xml
